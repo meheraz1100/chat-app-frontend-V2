@@ -1,6 +1,7 @@
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { socket } from "../socket";
 import Message from "./Message";
+import UsernameModal from "./UsernameModal";
 import "../styles/App.css";
 
 const Chat = () => {
@@ -9,12 +10,8 @@ const Chat = () => {
     const [username, setUsername] = useState("");
 
     useEffect(() => {
-        const user = prompt("Enter your username:");
-        setUsername(user);
-        socket.emit("set username", user);
-
         socket.on("chat history", (history) => {
-            setMessages(history);
+            setMessages(history); // Load only messages of existing users
         });
 
         socket.on("chat message", (msg) => {
@@ -27,6 +24,11 @@ const Chat = () => {
         };
     }, []);
 
+    const handleUsernameSubmit = (name) => {
+        setUsername(name);
+        socket.emit("set username", name);
+    };
+
     const sendMessage = () => {
         if (message.trim()) {
             socket.emit("chat message", message);
@@ -34,9 +36,13 @@ const Chat = () => {
         }
     };
 
+    if (!username) {
+        return <UsernameModal onSubmit={handleUsernameSubmit} />;
+    }
+
     return (
         <div className="chat-container">
-            <h2>Chat App</h2>
+            <h2>Welcome, {username}!</h2>
             <div className="chat-box">
                 {messages.map((msg, index) => (
                     <Message key={index} username={msg.username} text={msg.text} />
