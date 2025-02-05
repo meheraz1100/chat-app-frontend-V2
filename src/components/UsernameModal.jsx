@@ -1,31 +1,38 @@
 import React, { useState } from "react";
+import Modal from "react-modal";
 
-const UsernameModal = ({ onSubmit }) => {
-    const [username, setUsername] = useState("");
+Modal.setAppElement("#root");
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (username.trim()) {
-            onSubmit(username);
+const UsernameModal = ({ setUsername }) => {
+    const [inputUsername, setInputUsername] = useState("");
+
+    const handleSubmit = () => {
+        if (inputUsername.trim()) {
+            setUsername(inputUsername);
         }
     };
 
     return (
-        <div className="modal">
-            <div className="modal-content">
-                <h2>Enter Your Username</h2>
-                <form onSubmit={handleSubmit}>
-                    <input
-                        type="text"
-                        placeholder="Enter username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                    />
-                    <button type="submit">Join Chat</button>
-                </form>
-            </div>
-        </div>
+        <Modal isOpen={true} contentLabel="Enter Username" style={styles.modal}>
+            <h2>Enter Your Username</h2>
+            <input
+                type="text"
+                value={inputUsername}
+                onChange={(e) => setInputUsername(e.target.value)}
+                placeholder="Enter username"
+                style={styles.input}
+            />
+            <button onClick={handleSubmit} style={styles.button}>Join Chat</button>
+        </Modal>
     );
+};
+
+const styles = {
+    modal: {
+        content: { top: "50%", left: "50%", right: "auto", bottom: "auto", marginRight: "-50%", transform: "translate(-50%, -50%)", padding: "20px", textAlign: "center" }
+    },
+    input: { padding: "10px", width: "80%", marginBottom: "10px" },
+    button: { padding: "10px", cursor: "pointer" }
 };
 
 export default UsernameModal;

@@ -1,63 +1,71 @@
-import { useEffect, useState } from "react";
-import { socket } from "../socket";
-import Message from "./Message";
-import UsernameModal from "./UsernameModal";
-import "../styles/App.css";
+import React, { useState, useEffect } from "react";
+import io from "socket.io-client";
 
-const Chat = () => {
+const socket = io("http://localhost:4000"); // Replace with your server URL
+
+const Chat = ({ username }) => {
     const [messages, setMessages] = useState([]);
-    const [message, setMessage] = useState("");
-    const [username, setUsername] = useState("");
+    const [input, setInput] = useState("");
 
     useEffect(() => {
+        // Send username to the server
+        socket.emit("set username", username);
+
+        // Receive chat history (only if the user has previous messages)
         socket.on("chat history", (history) => {
-            setMessages(history); // Load only messages of existing users
+            setMessages(history);
         });
 
+        // Listen for new messages
         socket.on("chat message", (msg) => {
             setMessages((prev) => [...prev, msg]);
         });
 
         return () => {
-            socket.off("chat message");
             socket.off("chat history");
+            socket.off("chat message");
         };
-    }, []);
-
-    const handleUsernameSubmit = (name) => {
-        setUsername(name);
-        socket.emit("set username", name);
-    };
+    }, [username]);
 
     const sendMessage = () => {
-        if (message.trim()) {
-            socket.emit("chat message", message);
-            setMessage("");
+        if (input.trim() !== "") {
+            socket.emit("chat message", input);
+            setInput("");
         }
     };
 
-    if (!username) {
-        return <UsernameModal onSubmit={handleUsernameSubmit} />;
-    }
-
     return (
-        <div className="chat-container">
-            <h2>Welcome, {username}!</h2>
-            <div className="chat-box">
+        <div style={styles.chatContainer}>
+            <div style={styles.chatBox}>
                 {messages.map((msg, index) => (
-                    <Message key={index} username={msg.username} text={msg.text} />
+                    <div key={index} style={msg.type === "notification" ? styles.notification : styles.message}>
+                        {msg.type === "message" && <strong>{msg.username}: </strong>}
+                        {msg.text}
+                    </div>
                 ))}
             </div>
-            <input
-                type="text"
-                placeholder="Type a message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-            />
-            <button onClick={sendMessage}>Send</button>
+            <div style={styles.inputContainer}>
+                <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Type a message..."
+                    style={styles.input}
+                />
+                <button onClick={sendMessage} style={styles.button}>Send</button>
+            </div>
         </div>
     );
+};
+
+const styles = {
+    chatContainer: { width: "100%", maxWidth: "400px", margin: "auto", padding: "20px", textAlign: "center" },
+    chatBox: { border: "1px solid #ccc", height: "300px", overflowY: "auto", padding: "10px", marginBottom: "10px" },
+    message: { textAlign: "left", padding: "5px", borderBottom: "1px solid #ddd" },
+    notification: { textAlign: "center", color: "gray", fontStyle: "italic", padding: "5px" },
+    inputContainer: { display: "flex", gap: "10px" },
+    input: { flexGrow: 1, padding: "5px" },
+    button: { padding: "5px 10px", cursor: "pointer" }
 };
 
 export default Chat;
